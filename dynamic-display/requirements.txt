@@ -1,0 +1,8 @@
+ble
+feedparser
+pip
+pkg_resources
+PyQt5
+setuptools
+sip
+wheel

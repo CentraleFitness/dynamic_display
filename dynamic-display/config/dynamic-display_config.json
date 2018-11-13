@@ -1,0 +1,160 @@
+{
+    "SalleID": 2,
+    "SalleName": "FitCenter",
+    "SalleAdress" :"Marseille 13002",
+    "User1": {
+        "picture": "athlete_1.png",
+        "name": "MaxNair",
+        "score": {
+            "biking" : 120,
+            "running" : 822,
+            "pulldown" : 721,
+            "elliptique" : 612
+        }
+    },
+    "User2": {
+        "picture": "athlete_2.png",
+        "name": "Tim_Verst31",
+        "score": {
+            "biking" : 440,
+            "running" : 621,
+            "pulldown" : 916,
+            "elliptique" : 796
+        }
+    },
+    "User3": {
+        "picture": "athlete_3.png",
+        "name": "Liss Lucie",
+        "score": {
+            "biking" : 1083,
+            "running" : 133,
+            "pulldown" : 626,
+            "elliptique" : 359
+        }
+    },
+    "User4": {
+        "picture": "user.png",
+        "name": "Julien12",
+        "score": {
+            "biking" : 1519,
+            "running" :693,
+            "pulldown" : 210,
+            "elliptique" : 271
+        }
+    },
+    "User5": {
+        "picture": "user.png",
+        "name": "Liss Lucie",
+        "score": {
+            "biking" : 1083,
+            "running" : 493,
+            "pulldown" : 721,
+            "elliptique" : 612
+        }
+    },
+    "User6": {
+        "picture": "user.png",
+        "name": "Micka Veld",
+        "score": {
+            "biking" : 967,
+            "running" : 640,
+            "pulldown" : 234,
+            "elliptique" : 511
+        }
+    },
+    "User7": {
+        "picture": "user.png",
+        "name": "MaxNair",
+        "score": {
+            "biking" : 120,
+            "running" : 822,
+            "pulldown" : 776,
+            "elliptique" : 312
+        }
+    },
+    "User8": {
+        "picture": "user.png",
+        "name": "Anthony Mas",
+        "score": {
+            "biking" : 570,
+            "running" : 804,
+            "pulldown" : 721,
+            "elliptique" : 618
+        }
+    },
+    "User9": {
+        "picture": "user.png",
+        "name": "Marie Dmt",
+        "score": {
+            "biking" : 167,
+            "running" : 780,
+            "pulldown" : 0,   
+            "elliptique" : 220
+        }
+    },
+    "User10": {
+        "picture": "user.png",
+        "name": "Ugordemir",
+        "score": {
+            "biking" : 456,
+            "running" : 493,
+            "pulldown" : 1103,
+            "elliptique" : 400
+        }
+    },
+    "User11": {
+        "picture": "user.png",
+        "name": "Tim_Verst31",
+        "score": {
+            "biking" : 120,
+            "running" : 697,
+            "pulldown" : 916,
+            "elliptique" : 572
+        }
+    },
+    "User12": {
+        "picture": "user.png",
+        "name": "EstebanOcon",
+        "score": {
+            "biking" : 0,
+            "running" : 587,
+            "pulldown" : 899,
+            "elliptique" : 450
+        }
+    },
+    "User13": {
+        "picture": "user.png",
+        "name": "Galiny",
+        "score": {
+            "biking" : 120,
+            "running" : 493,
+            "pulldown" : 721,
+            "elliptique" : 1094
+        }
+    },
+    "User14": {
+        "picture": "user.png",
+        "name": "LoeweDSH",
+        "score": {
+            "biking" :  0,
+            "running" : 366,
+            "pulldown" : 413,
+            "elliptique" : 1021
+        }
+    },
+    "User15": {
+        "picture": "user.png",
+        "name": "Cedric_nt",
+        "score": {
+            "biking" : 574,
+            "running" : 342,
+            "pulldown" : 0,
+            "elliptique" : 973
+        }
+    },
+    "rssCategories": [
+        "World",
+        "France",
+        "Sport"
+    ]
+}
