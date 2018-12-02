@@ -1,6 +1,6 @@
-ble
 feedparser
 pip
+pymongo
 pkg_resources
 PyQt5
 setuptools
