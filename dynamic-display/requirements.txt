@@ -1,8 +1,7 @@
 feedparser
 pip
 pymongo
-pkg_resources
-PyQt5
 setuptools
 sip
 wheel
+PyQt5
