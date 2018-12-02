@@ -1,16 +1,19 @@
 import sys
 import json
-import base64
+import datetime
 
 from time import strftime
 from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia, QtMultimediaWidgets, uic
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from rssfeeder import *
 from dbconnector import *
 from fitnesscenter import fitnesscenter
+from utils import *
 
-screen_x = 1920 * 2
-screen_y = 1080 * 2
-now = QtCore.QDate.currentDate()
+
+screen_x = 1920 * 1.8
+screen_y = 1080 * 1.8
 
 class athlete(object):
     def __init__(self):
@@ -20,9 +23,13 @@ class athlete(object):
 
 class MyWindow(QtWidgets.QMainWindow):
     _counter = 0
+    _layout_counter = 0
     all_athlete = []
     _cf_db = dbconnector()
-    keyPressed = QtCore.pyqtSignal(int)
+    now = QtCore.QDate.currentDate()
+    timer = QtCore.QTimer()
+
+
 
     @property
     def counter(self):
@@ -30,6 +37,13 @@ class MyWindow(QtWidgets.QMainWindow):
     @counter.setter
     def counter(self, value):
         self._counter = value
+
+    @property
+    def layout_counter(self):
+        return self._layout_counter
+    @layout_counter.setter
+    def layout_counter(self, value):
+        self._layout_counter = value
 
     @property
     def cf_db(self):
@@ -42,7 +56,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.setFixedSize(screen_x, screen_y)
 
         # Init DB connection
-       # self.cf_db = dbconnector() #NO DATA CONNECTION
         # Init UI
         self.init_Ui()
         # used only with local config file, OR as long as there is no real users on DB
@@ -52,7 +65,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.display_score()
         self.display_events()
         self.display_rss()
-        self.keyPressed.connect(self.on_key)
         # Close DB connection
         #self.cf_db.db_close() NO DATA CONNECTION
 
@@ -70,20 +82,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.centralwidget.setContentsMargins(20, 25, 20, 0)
 
+        # Timer for refreshing display, every 15 sec
+        self.timer.timeout.connect(lambda: self.update_all_contents())
+        self.timer.start(15000)
+
         # Style the background
         self.refresher = QtCore.QTimer(self)
-
-        #self.refresher.timeout.connect(self.)
-
-        #Style the background with video
-        #player = QtMultimedia.QMediaPlayer      
-        #vw = QtMultimediaWidgets.QVideoWidget
-        #player.setVideoOutput(vw)
-        #player.setMedia(QtCore.QUrl.fromLocalFile("style/background_sample.mov"))
-        #vw.setGeometry(100, 100, 300, 400)
-        #vw.show()
-        #player.play()
-        #qDebug() << player.state()
 
         # Create a gratient background
         p = QtGui.QPalette()
@@ -94,14 +98,14 @@ class MyWindow(QtWidgets.QMainWindow):
         self.setPalette(p)
 
         # Display the date
-        now.toString(QtCore.Qt.ISODate)
-        now_date = now.toString('dd/MM/yyyy')
+        self.now.toString(QtCore.Qt.ISODate)
+        now_date = self.now.toString('dd/MM/yyyy')
         self.date_time.setText(now_date)
 
         # Display the time
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(lambda: self.updateTime(now_date))
-        self.timer.start(1000)
+        self.timer_1_sec = QtCore.QTimer(self)
+        self.timer_1_sec.timeout.connect(lambda: self.updateTime(now_date))
+        self.timer_1_sec.start(1000)
         self.date_time.setText(now_date + "  " + strftime("%H"+":"+"%M"))
         self.date_time.setStyleSheet('color: white')
         self.date_time.setFont(QtGui.QFont("built titling rg", 14))
@@ -116,20 +120,25 @@ class MyWindow(QtWidgets.QMainWindow):
         pixmap = QtGui.QPixmap('style/img/LOGO_CF_WHITE.png')
         self.pic_label.setPixmap(pixmap.scaled(screen_x * 0.08, screen_y * 0.08, QtCore.Qt.KeepAspectRatio))
 
-        # Add a signal when "Escape" in pressed
-        #keyPressed = QtCore.pyqtSignal(int)
-
         self.show()
 
-    def keyPressEvent(self, event):
-        super(MyWindow, self).keyPressEvent(event)
-        self.keyPressed.emit(event)
+    def paintEvent(self, e):
+        # Draw the news bar background
+        line_news_y = self.line_news.y()
+        line_footer_y = self.line_footer.y() + self.line_footer.height()
+        line_height = line_footer_y - line_news_y
 
-    def on_key(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setPen(Qt.white)
+        painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
+        painter.drawRect(0, line_news_y, screen_x, line_height)
+
+
+    def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            quit()
-            #self.close()
-    
+           self.cf_db.db_close()
+           self.close()
+
 
     def get_json_data(self):
         with open("config/dynamic-display_config.json", "r") as json_data:
@@ -186,7 +195,6 @@ class MyWindow(QtWidgets.QMainWindow):
     def display_fitnesscenter(self):
          # Set the fitness center info
         fitcenter_dict = self.cf_db.get_fitcenter()
-#        fitcenter_dict = {"name": "Eden Fit", "city": "Marseille"}
         myfitnesscenter = createFitnessCenter(fitcenter_dict)
         self.salle_name.setText(myfitnesscenter.name + "  " + myfitnesscenter.city)
         self.salle_name.setFont(QtGui.QFont("built titling rg", 14))
@@ -194,16 +202,13 @@ class MyWindow(QtWidgets.QMainWindow):
 
 
     def display_score(self):
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.updateScores)
-        self.timer.start(15000)
         # Should have all sport
         #self.sport_widget = DisciplineWidget_biking(self, self.all_athlete)
         #self.sport_widget2 = DisciplineWidget_running(self, self.all_athlete)
         #self.sport_widget3 = DisciplineWidget_pulldown(self, self.all_athlete)
         #self.sport_widget4 = DisciplineWidget_elliptique(self, self.all_athlete)
 
-       # self.hall_of_fame = HallFameWidget(self, self.all_athlete)
+        self.hall_of_fame = HallFameWidget(self, self.all_athlete)
         #shadow = QtGui.QGraphicsDropShadowEffect(self)
         #shadow.setBlurRadius(5)
         #self.hall_of_fame.setGraphicsEffect(shadow)
@@ -225,6 +230,19 @@ class MyWindow(QtWidgets.QMainWindow):
             self.sport_widget4 = DisciplineWidget_elliptique(self, self.all_athlete)
             self.scores_layout.addWidget(self.sport_widget4)
 
+        user_discipline = []
+        user_discipline = self.cf_db.get_best_production_day
+        # sport widget 4 is only for elliptic
+        if user_discipline:
+            self.sport_widget4.athlete_1_name.setText(user_discipline[0]["user_login"])
+            self.sport_widget4.score_1.setText(str(round(user_discipline[0]["production_day"])) + " W")
+        if len(user_discipline) > 1:
+            self.sport_widget4.athlete_1_name.setText(user_discipline[1]["user_login"])
+            self.sport_widget4.score_1.setText(str(round(user_discipline[1]["production_day"])) + " W")
+        if len(user_discipline) > 2:
+            self.sport_widget4.athlete_1_name.setText(user_discipline[2]["user_login"])
+            self.sport_widget4.score_1.setText(str(round(user_discipline[2]["production_day"])) + " W")
+
          # Should have all sports
         #self.scores_layout.addWidget(self.sport_widget)
         #self.scores_layout.addWidget(self.sport_widget2)
@@ -233,8 +251,27 @@ class MyWindow(QtWidgets.QMainWindow):
 
         #self.sport_widget3.hide()
         #self.sport_widget4.hide()
+        users_hall_of_fame = []
+        users_hall_of_fame = self.cf_db.get_best_production_year()
+        if users_hall_of_fame:
+            self.hall_of_fame.athlete_1.setText(users_hall_of_fame[0]["user_login"])
+            pixmap_profile_1 = QtGui.QPixmap()
+            pixmap_profile_1.loadFromData(get_data_from_uri(users_hall_of_fame[0]["user_pic"]))
+            self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_1.scaledToWidth(100))
+      
+        if len(users_hall_of_fame) > 1:
+            self.hall_of_fame.athlete_2.setText(users_hall_of_fame[1]["user_login"])
+            pixmap_profile_2 = QtGui.QPixmap()
+            pixmap_profile_2.loadFromData(get_data_from_uri(users_hall_of_fame[1]["user_pic"]))
+            self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
 
-        #self.scores_layout.addWidget(self.hall_of_fame)
+        if len(users_hall_of_fame) > 2:
+            self.hall_of_fame.athlete_2.setText(users_hall_of_fame[1]["user_login"])
+            pixmap_profile_2 = QtGui.QPixmap()
+            pixmap_profile_2.loadFromData(get_data_from_uri(users_hall_of_fame[1]["user_pic"]))
+            self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
+
+        self.scores_layout.addWidget(self.hall_of_fame)
 
 
     def display_events(self):
@@ -242,45 +279,61 @@ class MyWindow(QtWidgets.QMainWindow):
         events_widgets = []
         if self.cf_db.config_dict["show_events"] == True:
             events = self.cf_db.get_events()
-          # Only 1
-           # event_widget = EventWidget(self, events[0])
-            #self.scores_layout.addWidget(event_widget)
           
             # Multi events
             for event in events:
                 event_widget = EventWidget(self, event)
                 events_widgets.append(event_widget)
+                self.scores_layout.setAlignment(QtCore.Qt.AlignCenter)
             for event in events_widgets:
                 self.scores_layout.addWidget(event)
+                #event.hide()
 
     def display_rss(self):
         if self.cf_db.config_dict["show_news"] == True:
-            print(self.cf_db.config_dict["news_type"])
             getRSSnews(allheadlines, self.cf_db.config_dict.get("news_type", None))
-            pixmap = QtGui.QPixmap('style/img/news.png')
-            self.news_pic.setPixmap(pixmap.scaled(screen_x * 0.06, screen_y * 0.06, QtCore.Qt.KeepAspectRatio))
-            self.timer = QtCore.QTimer(self)
-            self.timer.timeout.connect(lambda: self.updateInfo(self.counter))
-            self.timer.start(15000)
-            self.rss_info.setText(allheadlines[0])
-            self.rss_info.setStyleSheet('color: white')
-            self.rss_info.setFont(QtGui.QFont("Droid Sans", 12))
+            news_widget = RSSWidget(self)
+            self.news_layout.addWidget(news_widget)
 
 
     # SLOTS
 
 
-    # Refresh time
+    # Refresh time #fading asynchrone
     def updateTime(self, now_date):
         self.date_time.setText(now_date + " " + strftime("%H"+":"+"%M"))
 
-    def updateInfo(self, index):
+    def update_all_contents(self):
+        layout_items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count())) 
+        #for item in layout_items:
+        #    self.fade(item.widget())
+            #item.widget().hide()
+        #if self.layout_counter < self.scores_layout.count():
+            #self.scores_layout.itemAt(self.layout_counter).widget().show()
+            #self.layout_counter += 1
+        #else:
+            #self.layout_counter = 0;
+        #self.scores_layout.itemAt(self.layout_counter).widget().show()
+        #self.unfade(self.scores_layout.itemAt(self.layout_counter).widget()) #Get real len
+        
+    
+        #for item in layout_items:
+            #self.fade(item.widget())
+        self.updateInfo()
+        self.updateScores()
+        
+
+    def updateInfo(self):
+        self.fade(self.news_layout.itemAt(0).widget().rss_info)
+        print("updating infos, from pre-loaded buffer")
         if self.counter <= len(allheadlines):
             self.counter = self.counter + 1
-        self.rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
+        self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
+        self.unfade(self.news_layout.itemAt(0).widget().rss_info)
 
     def updateScores(self):
-        print("hello")
+        print("updating score")
+ #        self.scores_layout.itemAt()
         #if self.sport_widget3.isHidden and self.sport_widget4.isHidden:
         #    self.sport_widget.hide()
         #    self.sport_widget2.hide()
@@ -290,14 +343,31 @@ class MyWindow(QtWidgets.QMainWindow):
         #    self.sport_widget4.isHidden = False
         #else:
         #    self.sport_widget3.hide()
-        #    self.sport_widget4.hide()
+        #    self.sport_widget4.hide() 
         #    self.sport_widget.show()
         #    self.sport_widget2.show()
         #    self.sport_widget3.isHidden = True
         #    self.sport_widget4.isHidden = True
- 
-    def unfaded(self):
-        self.rss_info
+
+    def fade(self, widget):
+        self.effect = QtWidgets.QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(2000)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.start()
+
+    def unfade(self, widget):
+        self.effect = QtWidgets.QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(2000)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.start()
 
 def createFitnessCenter(fitcenter_dict):
     fitnesscenter_test = fitnesscenter()
@@ -314,26 +384,98 @@ def createNewAthlete(user_dict):
 
 allheadlines = []
 
+#class FadedWidget(QtWidgets.QWidget):
+#    def __init__(self, *args, **kwargs):
+#        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+#        self.animation = QtCore.QVariantAnimation()
+#        self.animation.valueChanged.connect(self.changeColor)
+
+#class Widget1(QtWidgets.QWidget):
+#    def __init__(self):
+#        super().__init__()
+#        lay = QtWidgets.QVBoxLayout(self)
+#        greeting_text = QtWidgets.QLabel()
+#        greeting_text.setStyleSheet("font : 45px; font : bold; font-family : HelveticaNeue-UltraLight")
+#        greeting_text.setText("HELLO")
+#        lay.addWidget(greeting_text)
+#        #self.animation = QtCore.QVariantAnimation()
+#        #self.animation.valueChanged.connect(self.changeColor)
+#        ##btnFadeOut = QPushButton("fade out")
+#        btnAnimation = QtWidgets.QPushButton("animation")
+#        #lay.addWidget(btnFadeIn)
+#        #lay.addWidget(btnFadeOut)
+#        lay.addWidget(btnAnimation)
+        
+        #btnFadeIn.clicked.connect(self.greeting_text.startFadeIn)
+        #btnFadeOut.clicked.connect(self.greeting_text.startFadeOut)
+        #btnAnimation.clicked.connect(greeting_text.startAnimation)
+        #timer_ = QtCore.QTimer(self)
+        #timer_.timeout.connect(lambda: self.startAnimation())
+        #timer_.start(10000)
+
+    #def changeColor(self, color):
+    #    palette = self.palette()
+    #    palette.setColor(QtGui.QPalette.WindowText, color)
+    #    self.setPalette(palette)
+
+    #def startFadeIn(self):
+    #    self.animation.stop()
+    #    self.animation.setStartValue(QtGui.QColor(0, 0, 0, 0))
+    #    self.animation.setEndValue(QtGui.QColor(0, 0, 0, 255))
+    #    self.animation.setDuration(2000)
+    #    self.animation.setEasingCurve(QtCore.QEasingCurve.InBack)
+    #    self.animation.start()
+
+    #def startFadeOut(self):
+    #    self.animation.stop()
+    #    self.animation.setStartValue(QtGui.QColor(0, 0, 0, 255))
+    #    self.animation.setEndValue(QtGui.QColor(0, 0, 0, 0))
+    #    self.animation.setDuration(2000)
+    #    self.animation.setEasingCurve(QtCore.QEasingCurve.OutBack)
+    #    self.animation.start()
+
+    #def startAnimation(self):
+    #    self.startFadeIn()
+    #    loop = QtCore.QEventLoop()
+    #    self.animation.finished.connect(loop.quit)
+    #    loop.exec_()
+    #    QtCore.QTimer.singleShot(2000, self.startFadeOut)
+
+
+class RSSWidget(QtWidgets.QWidget):
+    def __init__(self, parent):
+        super(RSSWidget, self).__init__(parent)
+        uic.loadUi('ui/RSSWidget.ui', self)
+
+        pixmap = QtGui.QPixmap('style/img/news_4.png')
+        self.news_pic.setPixmap(pixmap.scaled(screen_x * 0.08, screen_y * 0.08, QtCore.Qt.KeepAspectRatio))
+
+        self.rss_info.setStyleSheet('color: #545454')
+        self.rss_info.setFont(QtGui.QFont("Droid Sans", 12))
+        self.rss_info.setText(allheadlines[0])
+
+
 
 class EventWidget(QtWidgets.QWidget):
     def __init__(self, parent, event):
         super(EventWidget, self).__init__(parent)
         uic.loadUi('ui/EventWidget.ui', self)
 
-     #   pic_recovered = base64.decodestring(event["pic"])
-      #  pic_file = event["title"].split(' ', 1)[0]
-       # print("PIC NAME : " + pic_file)
-        #f = open("")
+        pic_data = get_data_from_uri(event["pic"])
+        
         self.setStyleSheet('QLabel {color: white;} ')
         self.event_title.setText(event["title"])
-        self.event_title.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.event_title.setFont(QtGui.QFont("Lemon/Milk", 10))
         self.event_description.setText(event["description"])
         self.event_description.setFont(QtGui.QFont("Aquawax", 8))
-        if event["title"] == "Retour de l'été":
-            event_pic = QtGui.QPixmap('style/img/park.png')
-        else:
+        event_pic = QtGui.QPixmap()
+        if not event_pic.loadFromData(pic_data):
             event_pic = QtGui.QPixmap('style/img/event.png')
-        self.event_pic.setPixmap(event_pic.scaled(screen_x * 0.2, screen_y * 0.2, QtCore.Qt.KeepAspectRatio))
+        self.event_pic.setPixmap(event_pic.scaled(screen_x * 0.3, screen_y * 0.3, QtCore.Qt.KeepAspectRatio))
+        startdate_to_display = datetime.datetime.fromtimestamp(event["start_date"]/1000.0)
+        enddate_to_display = datetime.datetime.fromtimestamp(event["end_date"]/1000.0)
+        self.event_date.setText("{:%d/%m/%Y}".format(startdate_to_display) + " - " + "{:%d/%m/%Y}".format(enddate_to_display))
+        self.event_date.setFont(QtGui.QFont("Lemon/Milk", 8))
 
 
 class DisciplineWidget_biking(QtWidgets.QWidget):
@@ -350,16 +492,16 @@ class DisciplineWidget_biking(QtWidgets.QWidget):
         pixmap_sport = QtGui.QPixmap('style/img/biking.png')
         self.sport_pic.setPixmap(pixmap_sport.scaled(screen_x * 0.1, screen_y * 0.1, QtCore.Qt.KeepAspectRatio))
 
-        self.sport_name.setText("BIKING")
-        self.sport_name.setFont(QtGui.QFont("Aquawax", 18))
+        self.sport_name.setText("Podium du jour en BIKING")
+        self.sport_name.setFont(QtGui.QFont("Aquawax", 16))
         self.sport_name.setStyleSheet('color: white')
 
         self.score_1.setText(str(all_athlete[3].score["biking"]) + " W")
-        self.score_1.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_1.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.score_2.setText(str(all_athlete[4].score["biking"]) + " W")
-        self.score_2.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_2.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.score_3.setText(str(all_athlete[5].score["biking"]) + " W")
-        self.score_3.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_3.setFont(QtGui.QFont("Lemon/Milk", 12))
 
         self.athlete_1_name.setText(all_athlete[3].name)
         self.athlete_1_name.setFont(QtGui.QFont("Lemon/Milk", 9))
@@ -411,16 +553,16 @@ class DisciplineWidget_running(QtWidgets.QWidget):
         pixmap_sport = QtGui.QPixmap('style/img/running.png')
         self.sport_pic.setPixmap(pixmap_sport.scaled(screen_x * 0.1, screen_y * 0.1, QtCore.Qt.KeepAspectRatio))
 
-        self.sport_name.setText("RUNNING")
-        self.sport_name.setFont(QtGui.QFont("Aquawax", 18))
+        self.sport_name.setText("Podium du jour en RUNNING")
+        self.sport_name.setFont(QtGui.QFont("Aquawax", 16))
         self.sport_name.setStyleSheet('color: white')
 
         self.score_1.setText(str(all_athlete[6].score["running"]) + " W")
-        self.score_1.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_1.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.score_2.setText(str(all_athlete[7].score["running"]) + " W")
-        self.score_2.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_2.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.score_3.setText(str(all_athlete[8].score["running"]) + " W")
-        self.score_3.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_3.setFont(QtGui.QFont("Lemon/Milk", 12))
 
         self.athlete_1_name.setText(all_athlete[6].name)
         self.athlete_1_name.setFont(QtGui.QFont("Lemon/Milk", 9))
@@ -450,8 +592,8 @@ class DisciplineWidget_pulldown(QtWidgets.QWidget):
         pixmap_sport = QtGui.QPixmap('style/img/pulldown.png')
         self.sport_pic.setPixmap(pixmap_sport.scaled(screen_x * 0.1, screen_y * 0.1, QtCore.Qt.KeepAspectRatio))
 
-        self.sport_name.setText("PULLDOWN")
-        self.sport_name.setFont(QtGui.QFont("Aquawax", 18))
+        self.sport_name.setText("Podium du jour en PULLDOWN")
+        self.sport_name.setFont(QtGui.QFont("Aquawax", 16))
         self.sport_name.setStyleSheet('color: white')
 
         self.score_1.setText(str(all_athlete[9].score["pulldown"]) + " W")
@@ -462,12 +604,12 @@ class DisciplineWidget_pulldown(QtWidgets.QWidget):
         self.score_3.setFont(QtGui.QFont("Lemon/Milk", 9))
 
         self.athlete_1_name.setText(all_athlete[9].name)
-        self.athlete_1_name.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.athlete_1_name.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.athlete_2_name.setText(all_athlete[10].name)
-        self.athlete_2_name.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.athlete_2_name.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.athlete_2_name.move(0, 20)
         self.athlete_3_name.setText(all_athlete[11].name)
-        self.athlete_3_name.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.athlete_3_name.setFont(QtGui.QFont("Lemon/Milk", 12))
 
         self.progressBar_1.setValue(88)
         self.progressBar_2.setValue(78)
@@ -489,16 +631,23 @@ class DisciplineWidget_elliptique(QtWidgets.QWidget):
         pixmap_sport = QtGui.QPixmap('style/img/elliptique.png')
         self.sport_pic.setPixmap(pixmap_sport.scaled(screen_x * 0.1, screen_y * 0.1, QtCore.Qt.KeepAspectRatio))
 
-        self.sport_name.setText("ELLIPTIQUE")
-        self.sport_name.setFont(QtGui.QFont("Aquawax", 18))
+        self.sport_name.setText("Podium du jour en ELLIPTIQUE")
+        self.sport_name.setFont(QtGui.QFont("Aquawax", 16))
         self.sport_name.setStyleSheet('color: white')
 
+        pixmap_trophy_1 = QtGui.QPixmap('style/img/trophy.png')
+        self.trophy_1.setPixmap(pixmap_trophy_1.scaled(screen_x * 0.06, screen_y * 0.06, QtCore.Qt.KeepAspectRatio))
+        pixmap_trophy_2 = QtGui.QPixmap('style/img/flags2.png')
+        self.trophy_2.setPixmap(pixmap_trophy_2.scaled(screen_x * 0.06, screen_y * 0.06, QtCore.Qt.KeepAspectRatio))
+        pixmap_trophy_3 = QtGui.QPixmap('style/img/flags3.png')
+        self.trophy_3.setPixmap(pixmap_trophy_3.scaled(screen_x * 0.06, screen_y * 0.06, QtCore.Qt.KeepAspectRatio))
+
         self.score_1.setText(str(all_athlete[12].score["elliptique"]) + " W")
-        self.score_1.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_1.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.score_2.setText(str(all_athlete[13].score["elliptique"]) + " W")
-        self.score_2.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_2.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.score_3.setText(str(all_athlete[14].score["elliptique"]) + " W")
-        self.score_3.setFont(QtGui.QFont("Lemon/Milk", 9))
+        self.score_3.setFont(QtGui.QFont("Lemon/Milk", 12))
 
         self.athlete_1_name.setText(all_athlete[12].name)
         self.athlete_1_name.setFont(QtGui.QFont("Lemon/Milk", 9))
@@ -520,6 +669,8 @@ class HallFameWidget(QtWidgets.QWidget):
         p.setColor(QtGui.QPalette.Background, QtGui.QColor(191, 132, 93))
         self.setPalette(p)
         
+        self.setMaximumSize(screen_x / 3, screen_y) 
+
         pixmap_podium_1 = QtGui.QPixmap('style/img/trophy.png')
         self.podium_1.setPixmap(pixmap_podium_1.scaled(screen_x * 0.1, screen_y * 0.1, QtCore.Qt.KeepAspectRatio))
         pixmap_podium_2 = QtGui.QPixmap('style/img/flags2')
@@ -534,14 +685,16 @@ class HallFameWidget(QtWidgets.QWidget):
         self.athlete_3.setText(all_athlete[2].name)
         self.athlete_3.setFont(QtGui.QFont("Lemon/Milk light", 12))
 
-        pixmap_profile_1 = QtGui.QPixmap('style/img/athlete_1.png')
-        self.athlete_1_pic.setPixmap(pixmap_profile_1.scaledToWidth(80))
-        pixmap_profile_2 = QtGui.QPixmap('style/img/athlete_2.png')
-        self.athlete_2_pic.setPixmap(pixmap_profile_2.scaledToWidth(80))
-        pixmap_profile_3 = QtGui.QPixmap('style/img/athlete_3.png')
-        self.athlete_3_pic.setPixmap(pixmap_profile_3.scaledToWidth(80))
+        pixmap_profile_1 = QtGui.QPixmap('style/img/user.png')
+        self.athlete_1_pic.setPixmap(pixmap_profile_1.scaledToWidth(100))
+        pixmap_profile_2 = QtGui.QPixmap('style/img/user.png')
+        self.athlete_2_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
+        pixmap_profile_3 = QtGui.QPixmap('style/img/user.png')
+        self.athlete_3_pic.setPixmap(pixmap_profile_3.scaledToWidth(100))
 
         self.hall_of_fame.setFont(QtGui.QFont("Lemon/Milk", 16))
+        self.description.setText("Meilleurs sportifs de l'année")
+        self.description.setFont(QtGui.QFont("Aquawax", 10))
 
         self.show()
 

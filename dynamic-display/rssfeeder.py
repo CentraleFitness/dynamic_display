@@ -34,7 +34,7 @@ def getRSSnews( allheadlines, news_type ):
     #Filtered RSS news by categories
     newsurlsEcology = 'https://www.bfmtv.com/rss/planete/'
     newsurlsSport = 'https://www.lequipe.fr/rss/actu_rss.xml'
-    newsurlLocal = 'https://news.google.com/news/rss/?hl=fr&amp;ned=fr&amp;gl=FR' # Would be great if takes directly the city as local
+    newsurlsLocal = 'https://news.google.com/news/rss/?hl=fr&amp;ned=fr&amp;gl=FR' # Would be great if takes directly the city as local
     headlinesEcology = []
     headlinesSport = []
     headlinesLocal = []
@@ -45,10 +45,8 @@ def getRSSnews( allheadlines, news_type ):
         headlinesEcology.extend(getHeadlines(newsurlsEcology))
     if "sport" in news_type:
         headlinesSport.extend(getHeadlines(newsurlsSport))
-    else:
-        headlinesEcology.extend(getHeadlines(newsurlsEcology))
-   # if "locale" in news_type:
-   #     headlinesLocal.extend(getHeadlines(newsurlsLocal))
+    if "locale" in news_type:
+        headlinesLocal.extend(getHeadlines(newsurlsLocal))
 
     lenlist = [len(headlinesEcology), len(headlinesSport), len(headlinesLocal)]
 
@@ -57,7 +55,6 @@ def getRSSnews( allheadlines, news_type ):
         for i in range(max(lenlist) - 1):
             if len(headlinesEcology) > 0 and i < len(headlinesEcology):
                 allheadlines.append(headlinesEcology[i])
-                #print(headlinesEcology[i])
             if len(headlinesSport) > 0 and i < len(headlinesSport):
                 allheadlines.append(headlinesSport[i])
             if len(headlinesLocal) > 0 and i < len(headlinesLocal):

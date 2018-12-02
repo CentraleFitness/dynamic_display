@@ -6,9 +6,9 @@ from pprint import pprint
 
 class dbconnector(object):
     # connection string from MongoDB server
-    #client = MongoClient('mongodb://centralefitness:Epitech42@91.121.155.83:27017/centralefitness')
+    #_client = MongoClient('mongodb://centralefitness:Epitech42@91.121.155.83:27017/?connectTimeoutMS=2000')
     # connection string from SSH tunnel
-    _client = MongoClient('mongodb://localhost:27017/')
+    _client = MongoClient('mongodb://localhost:27017/?connectTimeoutMS=20000')
     _db = None
     _config_dict = {}
 
@@ -39,7 +39,7 @@ class dbconnector(object):
         # Issue the serverStatus command and print the results
         try: self.db.command("serverStatus")
         except Exception as e: print(e) # TODO manage DB connection failure /!\
-        else: print("Connection to the DB established")
+        else: print("Connection to the localhost database established")
 
         ## Enumerate all the collection in DB
         ##print(db.collection_names(include_system_collections=False)
@@ -60,8 +60,10 @@ class dbconnector(object):
         fitcenter_dict = {}
         # TODO check connection availability
         collection = self.db.fitness_centers
-#        centerquery = { "name": "Eden Fit" }
-        centerquery = {"_id": ObjectId("5be848a610dc3238eeed16af")}
+        with open("config/fitness_center_id.txt") as file:  
+            data = file.read()
+            id = data
+        centerquery = {"_id": ObjectId(id)}
         salle_collection = collection.find(centerquery)
 
          # Print all content of a doc
@@ -70,7 +72,6 @@ class dbconnector(object):
             fitcenter_dict["name"] = salle["name"]
             fitcenter_dict["city"] = salle["city"]
         return fitcenter_dict
-
 
     def get_configuration_local(self):
         config_discipline = {}
@@ -98,7 +99,7 @@ class dbconnector(object):
             data = file.read()
             id = data
         if id:
-            config_query = {"fitness_center_id" : ObjectId(id)}#, "show_events" : True}
+            config_query = {"fitness_center_id" : ObjectId(id)}
             config_collection = collection.find(config_query)
             for config in config_collection:
                 self.config_dict["show_events"] = config["show_events"]
@@ -109,10 +110,12 @@ class dbconnector(object):
                 self.config_dict["show_global_ranking"] = config["show_global_ranking"]
                 self.config_dict["show_national_production_rank"] = config["show_national_production_rank"]
                 self.config_dict["show_news"] = config["show_news"]
-                self.config_dict["news_type"] = config["news_type"]          
-                #print(config)
+                self.config_dict["news_type"] = []
+                for item in config["news_type"]:
+                    self.config_dict["news_type"].append(item["value"])
         else:
             print("Unable to load the fitness center id")
+
     def get_events_local(self):
         # should return a list of events {}
         event_dict = {}
@@ -128,20 +131,65 @@ class dbconnector(object):
           #  event_dict["title"] = 
 #            for events in events_collection:
             for item in self.config_dict["selected_events"]:
-                events_query = {"_id" : item} # , "_id" : ObjectId("5ba38e5abef7283efbb216ec")}
+                events_query = {"_id" : item}
                 events_collection = collection.find(events_query)
                 for event in events_collection:
                     event_dict = {}
                     event_dict["title"] = event["title"]
                     event_dict["description"] = event["description"]
                     event_dict["pic"] = event["picture"]
-                    print("ITEM TITLE : " + event["title"])
-                    print("ITEM DESC : " + event["description"])
+                    event_dict["start_date"] = event["start_date"]
+                    event_dict["end_date"] = event["end_date"]
+                    print("event title : " + event["title"])
+                    print("event desc : " + event["description"])
                     event_list.append(event_dict)
-        return(event_list)
+        return (event_list)
 
-    def get_users(self):
+    def get_user_pic(self, pic_id):
+        collection = self.db.pictures
+        picture_query = {"_id" : ObjectId(pic_id)}
+        picture_collection = collection.find(picture_query)
+        for picture in picture_collection:
+            return (picture["picture"])
+    
+    def get_user(self, id):
+        user_dict = {}
         collection = self.db.users
-        users_collection = collection.find({})
-        for user in users_collection:
-            print(user)
+        user_query = {"_id" : ObjectId(id)}
+        users_collection = collection.find(user_query)
+        for user in  users_collection:
+            user_dict["login"] = user["login"]
+            user_dict["pic"] = self.get_user_pic(user["picture_id"]) 
+        return (user_dict)
+
+    def get_best_production_year(self):
+        production_list = []
+        collection = self.db.electricproductions
+        production_query = {}
+        productions_collection = collection.find({})
+        config_collection = collection.find(production_query).sort("production_year", -1).limit(3)
+        for production in productions_collection:
+            production_elem = {}
+            user_info = {}
+            user_info = self.get_user(production["user_id"])
+            production_elem["production_year"] = production["production_year"]
+            production_elem["user_login"] = user_info["login"]
+            production_elem["user_pic"] = user_info["pic"]
+            production_list.append(production_elem)
+        return (production_list)
+
+    def get_best_production_day(self):
+        production_list = []
+        collection = self.db.electricproductions
+        production_query = {}
+        productions_collection = collection.find({})
+        config_collection = collection.find(production_query).sort("production_day", -1).limit(3)
+        for production in productions_collection:
+            production_elem = {}
+            user_info = {}
+            user_info = self.get_user(production["user_id"])
+            production_elem["production_day"] = production["production_day"]
+            production_elem["user_login"] = user_info["login"]
+            production_elem["user_pic"] = user_info["pic"]
+            production_list.append(production_elem)
+        return (production_list)
