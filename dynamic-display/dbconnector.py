@@ -4,6 +4,7 @@ from bson.objectid import ObjectId
 # pprint library is used to make the output look more pretty
 from pprint import pprint
 
+
 class dbconnector(object):
     # connection string from MongoDB server
     #_client = MongoClient('mongodb://centralefitness:Epitech42@91.121.155.83:27017/?connectTimeoutMS=2000')
@@ -41,9 +42,6 @@ class dbconnector(object):
         except Exception as e: print(e) # TODO manage DB connection failure /!\
         else: print("Connection to the localhost database established")
 
-        ## Enumerate all the collection in DB
-        ##print(db.collection_names(include_system_collections=False)
-
 
     def db_close(self):
         self.client.close()
@@ -51,7 +49,6 @@ class dbconnector(object):
 
     def get_fitcenter_local(self):
         fitcenter_dict = {}
-      #  fitcenter_dict["_id"] = ObjectId("5ba38ce8bef7283efbb216e0")
         fitcenter_dict["_id"] =  "Eden Fit"
         fitcenter_dict["city"] = "Marseille"
         return fitcenter_dict

@@ -28,8 +28,7 @@ class MyWindow(QtWidgets.QMainWindow):
     _cf_db = dbconnector()
     now = QtCore.QDate.currentDate()
     timer = QtCore.QTimer()
-
-
+    timer_info = QtCore.QTimer()
 
     @property
     def counter(self):
@@ -53,7 +52,12 @@ class MyWindow(QtWidgets.QMainWindow):
         # Load the Ui
         super(MyWindow, self).__init__()
         uic.loadUi('ui/MainWindow.ui', self)
+        global screen_x
+        global screen_y
         self.setFixedSize(screen_x, screen_y)
+        self.setWindowState(QtCore.Qt.WindowMaximized)
+        screen_x = self.frameGeometry().width()
+        screen_y = self.frameGeometry().height()
 
         # Init DB connection
         # Init UI
@@ -63,7 +67,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.cf_db.get_configuration()
         self.display_fitnesscenter()
         self.display_score()
-        self.display_events()
+        #self.display_events()
         self.display_rss()
         # Close DB connection
         #self.cf_db.db_close() NO DATA CONNECTION
@@ -81,6 +85,10 @@ class MyWindow(QtWidgets.QMainWindow):
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.centralwidget.setContentsMargins(20, 25, 20, 0)
+
+        # Timer for refreshing infos, every 10 sec
+        self.timer_info.timeout.connect(lambda: self.updateInfo())
+        self.timer_info.start(10000)
 
         # Timer for refreshing display, every 15 sec
         self.timer.timeout.connect(lambda: self.update_all_contents())
@@ -108,7 +116,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.timer_1_sec.start(1000)
         self.date_time.setText(now_date + "  " + strftime("%H"+":"+"%M"))
         self.date_time.setStyleSheet('color: white')
-        self.date_time.setFont(QtGui.QFont("built titling rg", 14))
+        self.date_time.setFont(QtGui.QFont("built titling rg", 20))
 
         # Center the title with a spacer
         self.header_layout.itemAt(2).changeSize((screen_x / 3) - (self.best_score.width() / 2), 20)
@@ -118,7 +126,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         # Add the logo as a footer
         pixmap = QtGui.QPixmap('style/img/LOGO_CF_WHITE.png')
-        self.pic_label.setPixmap(pixmap.scaled(screen_x * 0.08, screen_y * 0.08, QtCore.Qt.KeepAspectRatio))
+        self.pic_label.setPixmap(pixmap.scaled(screen_x * 0.09, screen_y * 0.09, QtCore.Qt.KeepAspectRatio))
 
         self.show()
 
@@ -131,7 +139,7 @@ class MyWindow(QtWidgets.QMainWindow):
         painter = QtGui.QPainter(self)
         painter.setPen(Qt.white)
         painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
-        painter.drawRect(0, line_news_y, screen_x, line_height)
+        painter.drawRect(0, line_news_y, screen_x + 500, line_height)
 
 
     def keyPressEvent(self, event):
@@ -143,8 +151,6 @@ class MyWindow(QtWidgets.QMainWindow):
     def get_json_data(self):
         with open("config/dynamic-display_config.json", "r") as json_data:
             data_dict = json.load(json_data)
-        #if "FitnesscenterName" and "FitnesscenterAdress" in data_dict :
-        #    self.salle_name.setText(data_dict["FitnesscenterName"] + " " + data_dict["FitnesscenterAdress"])
         if "User1" in data_dict :
             athlete1 = createNewAthlete(data_dict["User1"])
             self.all_athlete.append(athlete1)
@@ -197,7 +203,7 @@ class MyWindow(QtWidgets.QMainWindow):
         fitcenter_dict = self.cf_db.get_fitcenter()
         myfitnesscenter = createFitnessCenter(fitcenter_dict)
         self.salle_name.setText(myfitnesscenter.name + "  " + myfitnesscenter.city)
-        self.salle_name.setFont(QtGui.QFont("built titling rg", 14))
+        self.salle_name.setFont(QtGui.QFont("built titling rg", 20))
         self.salle_name.setStyleSheet('color: white')
 
 
@@ -230,8 +236,116 @@ class MyWindow(QtWidgets.QMainWindow):
             self.sport_widget4 = DisciplineWidget_elliptique(self, self.all_athlete)
             self.scores_layout.addWidget(self.sport_widget4)
 
+        self.updateScores()
+         # Should have all sports
+        #self.scores_layout.addWidget(self.sport_widget)
+        #self.scores_layout.addWidget(self.sport_widget2)
+        #self.scores_layout.addWidget(self.sport_widget3)
+        #self.scores_layout.addWidget(self.sport_widget4)
+
+        self.scores_layout.addWidget(self.hall_of_fame)
+
+
+    def display_events(self):
+        events = {}
+        events_widgets = []
+        if self.cf_db.config_dict["show_events"] == True:
+            events = self.cf_db.get_events()
+          
+            # Multi events
+            for event in events:
+                event_widget = EventWidget(self, event)
+                events_widgets.append(event_widget)
+                self.scores_layout.setAlignment(QtCore.Qt.AlignCenter)
+            for event in events_widgets:
+                flag = 0
+                items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
+                for w in items:
+                    if w.widget().objectName() == event.objectName():
+                        flag = 1;
+                        continue
+                if flag == 0:
+                    self.scores_layout.addWidget(event)
+                
+
+    def display_rss(self):
+        if self.cf_db.config_dict["show_news"] == True:
+            getRSSnews(allheadlines, self.cf_db.config_dict.get("news_type", None))
+            news_widget = RSSWidget(self)
+            self.news_layout.addWidget(news_widget)
+
+
+    # SLOTS
+
+
+    # Refresh time #fading asynchrone
+    def updateTime(self, now_date):
+        self.date_time.setText(now_date + " " + strftime("%H"+":"+"%M"))
+
+    def update_all_contents(self):
+        self.cf_db.get_configuration()
+        layout_items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
+
+        #for item in layout_items:
+        #    self.fade(item.widget())
+            #item.widget().hide()
+        #if self.layout_counter < self.scores_layout.count():
+            #self.scores_layout.itemAt(self.layout_counter).widget().show()
+            #self.layout_counter += 1
+        #else:
+            #self.layout_counter = 0;
+        #self.scores_layout.itemAt(self.layout_counter).widget().show()
+        #self.unfade(self.scores_layout.itemAt(self.layout_counter).widget()) #Get real len
+        
+    
+        #for item in layout_items:
+            #self.fade(item.widget())
+
+        self.updateEvents()
+        self.updateScores()
+
+        items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
+        for item in items:
+            if item.widget().objectName() != "Form":
+                if self.sport_widget4.isHidden() == False and self.hall_of_fame.isHidden() == False:
+                     item.widget().show()
+                elif self.sport_widget4.isHidden() == True and self.hall_of_fame.isHidden() == True:
+                     item.widget().hide()
+        if self.sport_widget4.isHidden() == False and self.hall_of_fame.isHidden() == False:
+            self.fade(self.sport_widget4)
+            self.sport_widget4.hide()
+            self.hall_of_fame.hide()
+            self.unfade(self.sport_widget4)
+        elif self.sport_widget4.isHidden() == True and self.hall_of_fame.isHidden() == True:
+            self.fade(self.sport_widget4)
+            self.sport_widget4.show()
+            self.hall_of_fame.show()
+            self.unfade(self.sport_widget4)
+
+
+    def updateInfo(self):
+        self.fade(self.news_layout.itemAt(0).widget().rss_info)
+        print("updating infos, from pre-loaded buffer")
+        if self.counter <= len(allheadlines):
+            self.counter = self.counter + 1
+        self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
+        self.unfade(self.news_layout.itemAt(0).widget().rss_info)
+
+    def updateEvents(self):
+        self.display_events()
+       
+                #if item.widget().isHidden() ==  False:
+                    #self.fade(item.widget())
+                    #item.widget().hide()
+                #elif item.widget().isHidden() == True:
+                    #item.widget().show()
+                    #self.unfade(item.widget())
+
+    def updateScores(self):
+        print("updating score")
         user_discipline = []
-        user_discipline = self.cf_db.get_best_production_day
+        user_discipline = self.cf_db.get_best_production_day()
+
         # sport widget 4 is only for elliptic
         if user_discipline:
             self.sport_widget4.athlete_1_name.setText(user_discipline[0]["user_login"])
@@ -242,15 +356,6 @@ class MyWindow(QtWidgets.QMainWindow):
         if len(user_discipline) > 2:
             self.sport_widget4.athlete_1_name.setText(user_discipline[2]["user_login"])
             self.sport_widget4.score_1.setText(str(round(user_discipline[2]["production_day"])) + " W")
-
-         # Should have all sports
-        #self.scores_layout.addWidget(self.sport_widget)
-        #self.scores_layout.addWidget(self.sport_widget2)
-        #self.scores_layout.addWidget(self.sport_widget3)
-        #self.scores_layout.addWidget(self.sport_widget4)
-
-        #self.sport_widget3.hide()
-        #self.sport_widget4.hide()
         users_hall_of_fame = []
         users_hall_of_fame = self.cf_db.get_best_production_year()
         if users_hall_of_fame:
@@ -271,83 +376,6 @@ class MyWindow(QtWidgets.QMainWindow):
             pixmap_profile_2.loadFromData(get_data_from_uri(users_hall_of_fame[1]["user_pic"]))
             self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
 
-        self.scores_layout.addWidget(self.hall_of_fame)
-
-
-    def display_events(self):
-        events = {}
-        events_widgets = []
-        if self.cf_db.config_dict["show_events"] == True:
-            events = self.cf_db.get_events()
-          
-            # Multi events
-            for event in events:
-                event_widget = EventWidget(self, event)
-                events_widgets.append(event_widget)
-                self.scores_layout.setAlignment(QtCore.Qt.AlignCenter)
-            for event in events_widgets:
-                self.scores_layout.addWidget(event)
-                #event.hide()
-
-    def display_rss(self):
-        if self.cf_db.config_dict["show_news"] == True:
-            getRSSnews(allheadlines, self.cf_db.config_dict.get("news_type", None))
-            news_widget = RSSWidget(self)
-            self.news_layout.addWidget(news_widget)
-
-
-    # SLOTS
-
-
-    # Refresh time #fading asynchrone
-    def updateTime(self, now_date):
-        self.date_time.setText(now_date + " " + strftime("%H"+":"+"%M"))
-
-    def update_all_contents(self):
-        layout_items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count())) 
-        #for item in layout_items:
-        #    self.fade(item.widget())
-            #item.widget().hide()
-        #if self.layout_counter < self.scores_layout.count():
-            #self.scores_layout.itemAt(self.layout_counter).widget().show()
-            #self.layout_counter += 1
-        #else:
-            #self.layout_counter = 0;
-        #self.scores_layout.itemAt(self.layout_counter).widget().show()
-        #self.unfade(self.scores_layout.itemAt(self.layout_counter).widget()) #Get real len
-        
-    
-        #for item in layout_items:
-            #self.fade(item.widget())
-        self.updateInfo()
-        self.updateScores()
-        
-
-    def updateInfo(self):
-        self.fade(self.news_layout.itemAt(0).widget().rss_info)
-        print("updating infos, from pre-loaded buffer")
-        if self.counter <= len(allheadlines):
-            self.counter = self.counter + 1
-        self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
-        self.unfade(self.news_layout.itemAt(0).widget().rss_info)
-
-    def updateScores(self):
-        print("updating score")
- #        self.scores_layout.itemAt()
-        #if self.sport_widget3.isHidden and self.sport_widget4.isHidden:
-        #    self.sport_widget.hide()
-        #    self.sport_widget2.hide()
-        #    self.sport_widget3.show()
-        #    self.sport_widget4.show()
-        #    self.sport_widget3.isHidden = False
-        #    self.sport_widget4.isHidden = False
-        #else:
-        #    self.sport_widget3.hide()
-        #    self.sport_widget4.hide() 
-        #    self.sport_widget.show()
-        #    self.sport_widget2.show()
-        #    self.sport_widget3.isHidden = True
-        #    self.sport_widget4.isHidden = True
 
     def fade(self, widget):
         self.effect = QtWidgets.QGraphicsOpacityEffect()
@@ -413,34 +441,6 @@ allheadlines = []
         #timer_.timeout.connect(lambda: self.startAnimation())
         #timer_.start(10000)
 
-    #def changeColor(self, color):
-    #    palette = self.palette()
-    #    palette.setColor(QtGui.QPalette.WindowText, color)
-    #    self.setPalette(palette)
-
-    #def startFadeIn(self):
-    #    self.animation.stop()
-    #    self.animation.setStartValue(QtGui.QColor(0, 0, 0, 0))
-    #    self.animation.setEndValue(QtGui.QColor(0, 0, 0, 255))
-    #    self.animation.setDuration(2000)
-    #    self.animation.setEasingCurve(QtCore.QEasingCurve.InBack)
-    #    self.animation.start()
-
-    #def startFadeOut(self):
-    #    self.animation.stop()
-    #    self.animation.setStartValue(QtGui.QColor(0, 0, 0, 255))
-    #    self.animation.setEndValue(QtGui.QColor(0, 0, 0, 0))
-    #    self.animation.setDuration(2000)
-    #    self.animation.setEasingCurve(QtCore.QEasingCurve.OutBack)
-    #    self.animation.start()
-
-    #def startAnimation(self):
-    #    self.startFadeIn()
-    #    loop = QtCore.QEventLoop()
-    #    self.animation.finished.connect(loop.quit)
-    #    loop.exec_()
-    #    QtCore.QTimer.singleShot(2000, self.startFadeOut)
-
 
 class RSSWidget(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -451,7 +451,7 @@ class RSSWidget(QtWidgets.QWidget):
         self.news_pic.setPixmap(pixmap.scaled(screen_x * 0.08, screen_y * 0.08, QtCore.Qt.KeepAspectRatio))
 
         self.rss_info.setStyleSheet('color: #545454')
-        self.rss_info.setFont(QtGui.QFont("Droid Sans", 12))
+        self.rss_info.setFont(QtGui.QFont("Droid Sans", 16))
         self.rss_info.setText(allheadlines[0])
 
 
@@ -460,6 +460,8 @@ class EventWidget(QtWidgets.QWidget):
     def __init__(self, parent, event):
         super(EventWidget, self).__init__(parent)
         uic.loadUi('ui/EventWidget.ui', self)
+
+        self.setObjectName("Event" + event["title"].replace(" ", ""))
 
         pic_data = get_data_from_uri(event["pic"])
         
@@ -476,6 +478,8 @@ class EventWidget(QtWidgets.QWidget):
         enddate_to_display = datetime.datetime.fromtimestamp(event["end_date"]/1000.0)
         self.event_date.setText("{:%d/%m/%Y}".format(startdate_to_display) + " - " + "{:%d/%m/%Y}".format(enddate_to_display))
         self.event_date.setFont(QtGui.QFont("Lemon/Milk", 8))
+
+        self.hide()
 
 
 class DisciplineWidget_biking(QtWidgets.QWidget):
@@ -511,33 +515,8 @@ class DisciplineWidget_biking(QtWidgets.QWidget):
         self.athlete_3_name.setText(all_athlete[5].name)
         self.athlete_3_name.setFont(QtGui.QFont("Lemon/Milk", 9))
 
-        #self.timerAnimation = QtCore.QTimer(self)
-
-        #opacityEffect = QtWidgets.QGraphicsOpacityEffect(self)
-        #self.setGraphicsEffect(opacityEffect)
-        #opacityEffect.setOpacity(1)
-
-        #rssAnimation = QtCore.QPropertyAnimation(opacityEffect, b"opacity")
-        #rssAnimation.setStartValue(1)
-        #rssAnimation.setEndValue(0)
-        #rssAnimation.setDuration(2000)
-        #rssAnimation.setEasingCurve(QtCore.QEasingCurve.Linear)
-        #rssAnimation.valueChanged.connect(self.unfaded)
-
-        #self.timerAnimation.timeout.connect(self.faded)
-        #self.timerAnimation.start(13000)
-
         self.show()
 
-    #def faded(self):
-    #    #self.rss_info
-    #    self.rssAnimation.start()
-
-    #def unfaded(self):
-    #    if self.rssAnimation.direction == QtCore.QAbstractAnimation.Forward:
-    #        self.rssAnimation.setDirection(QtCore.QAbstractAnimation.Backward)
-    #    else:
-    #        self.rssAnimation.setDirection(QtCore.AbstractAnimation.Forward)
 
 class DisciplineWidget_running(QtWidgets.QWidget):
     def __init__(self, parent, all_athlete):        
@@ -692,9 +671,9 @@ class HallFameWidget(QtWidgets.QWidget):
         pixmap_profile_3 = QtGui.QPixmap('style/img/user.png')
         self.athlete_3_pic.setPixmap(pixmap_profile_3.scaledToWidth(100))
 
-        self.hall_of_fame.setFont(QtGui.QFont("Lemon/Milk", 16))
+        self.hall_of_fame.setFont(QtGui.QFont("Lemon/Milk", 20))
         self.description.setText("Meilleurs sportifs de l'année")
-        self.description.setFont(QtGui.QFont("Aquawax", 10))
+        self.description.setFont(QtGui.QFont("Aquawax", 15))
 
         self.show()
 
