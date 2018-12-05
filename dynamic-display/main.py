@@ -3,7 +3,7 @@ import json
 import datetime
 
 from time import strftime
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia, QtMultimediaWidgets, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from rssfeeder import *
@@ -11,9 +11,24 @@ from dbconnector import *
 from fitnesscenter import fitnesscenter
 from utils import *
 
+from sshtunnel import SSHTunnelForwarder
 
-screen_x = 1920 * 1.8
-screen_y = 1080 * 1.8
+SSH_HOST = ""
+SSH_USER = ""
+SSH_PASS = ""
+
+server = SSHTunnelForwarder(
+    SSH_HOST,
+    ssh_username=SSH_USER,
+    ssh_password=SSH_PASS,
+    remote_bind_address=('localhost', 27017),
+    local_bind_address=('localhost', 27017)
+)
+
+server.start()
+
+screen_x = 1920
+screen_y = 1080
 
 class athlete(object):
     def __init__(self):
