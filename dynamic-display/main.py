@@ -312,15 +312,15 @@ class MyWindow(QtWidgets.QMainWindow):
                 elif self.sport_widget4.isHidden() == True and self.hall_of_fame.isHidden() == True:
                      item.widget().hide()
         if self.sport_widget4.isHidden() == False and self.hall_of_fame.isHidden() == False:
-            self.fade(self.sport_widget4)
+            #self.fade(self.sport_widget4)
             self.sport_widget4.hide()
             self.hall_of_fame.hide()
-            self.unfade(self.sport_widget4)
+            #self.unfade(self.sport_widget4)
         elif self.sport_widget4.isHidden() == True and self.hall_of_fame.isHidden() == True:
-            self.fade(self.sport_widget4)
+            #self.fade(self.sport_widget4)
             self.sport_widget4.show()
             self.hall_of_fame.show()
-            self.unfade(self.sport_widget4)
+            #self.unfade(self.sport_widget4)
 
 
     def updateInfo(self):
@@ -467,9 +467,9 @@ class EventWidget(QtWidgets.QWidget):
         
         self.setStyleSheet('QLabel {color: white;} ')
         self.event_title.setText(event["title"])
-        self.event_title.setFont(QtGui.QFont("Lemon/Milk", 10))
+        self.event_title.setFont(QtGui.QFont("Lemon/Milk", 12))
         self.event_description.setText(event["description"])
-        self.event_description.setFont(QtGui.QFont("Aquawax", 8))
+        self.event_description.setFont(QtGui.QFont("Aquawax", 10))
         event_pic = QtGui.QPixmap()
         if not event_pic.loadFromData(pic_data):
             event_pic = QtGui.QPixmap('style/img/event.png')
@@ -477,7 +477,7 @@ class EventWidget(QtWidgets.QWidget):
         startdate_to_display = datetime.datetime.fromtimestamp(event["start_date"]/1000.0)
         enddate_to_display = datetime.datetime.fromtimestamp(event["end_date"]/1000.0)
         self.event_date.setText("{:%d/%m/%Y}".format(startdate_to_display) + " - " + "{:%d/%m/%Y}".format(enddate_to_display))
-        self.event_date.setFont(QtGui.QFont("Lemon/Milk", 8))
+        self.event_date.setFont(QtGui.QFont("Lemon/Milk", 10))
 
         self.hide()
 
