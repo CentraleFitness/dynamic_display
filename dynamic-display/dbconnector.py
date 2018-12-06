@@ -158,14 +158,28 @@ class dbconnector(object):
         for user in  users_collection:
             user_dict["login"] = user["login"]
             user_dict["pic"] = self.get_user_pic(user["picture_id"]) 
+            user_dict["fitness_center_id"] = user["fitness_center_id"]
         return (user_dict)
+
+    def get_total_production_year(self):
+        production_list = []
+        collection = self.db.electricproductions
+        production_query = {}
+        production_totale = 0
+        productions_collection = collection.find(production_query)
+        for production in productions_collection:
+            user_info = {}
+            user_info = self.get_user(production["user_id"])
+            fitcenter = self.get_fitcenter()
+            if fitcenter["_id"] == user_info["fitness_center_id"]:
+                production_totale += production["production_year"]
+        return (production_totale)
 
     def get_best_production_year(self):
         production_list = []
         collection = self.db.electricproductions
         production_query = {}
-        productions_collection = collection.find({})
-        config_collection = collection.find(production_query).sort("production_year", -1).limit(3)
+        productions_collection = collection.find(production_query).sort("production_year", -1).limit(3)
         for production in productions_collection:
             production_elem = {}
             user_info = {}
@@ -180,8 +194,7 @@ class dbconnector(object):
         production_list = []
         collection = self.db.electricproductions
         production_query = {}
-        productions_collection = collection.find({})
-        config_collection = collection.find(production_query).sort("production_day", -1).limit(3)
+        productions_collection = collection.find(production_query).sort("production_day", -1).limit(3)
         for production in productions_collection:
             production_elem = {}
             user_info = {}

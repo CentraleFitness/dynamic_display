@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.0" idbasedtr="false">
+<ui version="4.0">
  <class>Event</class>
  <widget class="QWidget" name="Event">
   <property name="geometry">

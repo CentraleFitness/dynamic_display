@@ -264,7 +264,7 @@ class MyWindow(QtWidgets.QMainWindow):
         events_widgets = []
         if self.cf_db.config_dict["show_events"] == True:
             events = self.cf_db.get_events()
-          
+         
             # Multi events
             for event in events:
                 event_widget = EventWidget(self, event)
@@ -274,11 +274,24 @@ class MyWindow(QtWidgets.QMainWindow):
                 flag = 0
                 items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
                 for w in items:
+                    print(w.widget().objectName())
                     if w.widget().objectName() == event.objectName():
                         flag = 1;
                         continue
                 if flag == 0:
                     self.scores_layout.addWidget(event)
+        if self.cf_db.config_dict["show_national_production_rank"] == True:
+            production_totale = self.cf_db.get_total_production_year()
+            production_widget = ProductionWidget(self, production_totale)
+            flag = 0
+            items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
+            for w in items:
+                print(w.widget().objectName())
+                if w.widget().objectName() == "Production":
+                    flag = 1;
+                    continue
+            if flag == 0:
+                self.scores_layout.addWidget(production_widget)
                 
 
     def display_rss(self):
@@ -304,6 +317,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
         for item in items:
+            print(item.widget().objectName())
             if item.widget().objectName() != "Form":
                 if self.sport_widget4.isHidden() == False and self.hall_of_fame.isHidden() == False:
                      item.widget().show()
@@ -313,11 +327,13 @@ class MyWindow(QtWidgets.QMainWindow):
             #self.fade(self.sport_widget4)
             self.sport_widget4.hide()
             self.hall_of_fame.hide()
+            self.best_score.setText("Les actualités de votre salle")
             #self.unfade(self.sport_widget4)
         elif self.sport_widget4.isHidden() == True and self.hall_of_fame.isHidden() == True:
             #self.fade(self.sport_widget4)
             self.sport_widget4.show()
             self.hall_of_fame.show()
+            self.best_score.setText("Production d'énergie en temps réel")
             #self.unfade(self.sport_widget4)
 
 
@@ -384,7 +400,7 @@ class MyWindow(QtWidgets.QMainWindow):
                 pixmap_profile_3 = QtGui.QPixmap()
                 if users_hall_of_fame[2]["user_pic"]:
                     pixmap_profile_3.loadFromData(get_data_from_uri(users_hall_of_fame[2]["user_pic"]))
-                    self.hall_of_fame.athlete_3_pic.setPixmap(pixmap_profile_2.scaled(screen_x * 0.09, screen_y * 0.09, QtCore.Qt.KeepAspectRatio))
+                    self.hall_of_fame.athlete_3_pic.setPixmap(pixmap_profile_3.scaled(screen_x * 0.09, screen_y * 0.09, QtCore.Qt.KeepAspectRatio))
 
 
     def fade(self, widget):
@@ -688,26 +704,30 @@ class HallFameWidget(QtWidgets.QWidget):
         self.show()
 
 class ProductionWidget(QtWidgets.QWidget):
-    def __init__(self, parent, all_athlete):
-        super(HallFameWidget, self).__init__(parent)
+    def __init__(self, parent, production_totale):
+        super(ProductionWidget, self).__init__(parent)
         uic.loadUi('ui/ProductionWidget.ui', self)
 
         p = QtGui.QPalette()
-        p.setColor(QtGui.QPalette.Background, QtGui.QColor(255, 255, 255))
+        p.setColor(QtGui.QPalette.Background, QtGui.QColor(61, 61, 61))
         self.setPalette(p)
         
         self.setMaximumSize(screen_x / 3, screen_y) 
-
-        self.production.setText("C'est ce que vous produisez comme énergie!")
-        self.production.setFont(QtGui.QFont("Lemon/Milk light", 12))
+        self.description.setText("Continuez ainsi!")
+        self.production.setText(str(round(production_totale)) + " Watts")
+        self.production.setFont(QtGui.QFont("Lemon/Milk light", 14))
+        #self.production.setStyleSheet('color : rgb(122, 122, 122)')
 
         production_picture = QtGui.QPixmap('style/img/electric.png')
         self.production_pic.setPixmap(production_picture.scaled(screen_x * 0.2, screen_y * 0.2, QtCore.Qt.KeepAspectRatio))
 
-        self.title.setFont(QtGui.QFont("Lemon/Milk", 20))
-        self.description.setFont(QtGui.QFont("Aquawax", 15))
+        self.title.setFont(QtGui.QFont("Lemon/Milk", 14))
+        #self.title.setStyleSheet('color : rgb(122, 122, 122)')
+        self.description.setFont(QtGui.QFont("Aquawax", 12))
+        #self.description.setStyleSheet('color : rgb(122, 122, 122)')
 
-        self.show()
+        self.setObjectName("Production")
+        self.hide()
 
 
 if __name__ == "__main__":
