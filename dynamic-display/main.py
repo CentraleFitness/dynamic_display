@@ -3,7 +3,7 @@ import json
 import datetime
 
 from time import strftime
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia, QtMultimediaWidgets, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from rssfeeder import *
@@ -58,7 +58,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.setWindowState(QtCore.Qt.WindowMaximized)
         screen_x = self.frameGeometry().width()
         screen_y = self.frameGeometry().height()
-
+        print("Screen size : x = " + str(screen_x) + ", y = " + str(screen_y))
         # Init DB connection
         # Init UI
         self.init_Ui()
@@ -324,12 +324,18 @@ class MyWindow(QtWidgets.QMainWindow):
 
 
     def updateInfo(self):
-        self.fade(self.news_layout.itemAt(0).widget().rss_info)
-        print("updating infos, from pre-loaded buffer")
-        if self.counter <= len(allheadlines):
-            self.counter = self.counter + 1
-        self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
-        self.unfade(self.news_layout.itemAt(0).widget().rss_info)
+        if self._cf_db.config_dict["show_news"] == False:
+            if self.news_layout.itemAt(0):
+                self.news_layout.itemAt(0).widget().hide()
+        else:
+            if self.news_layout.itemAt(0).widget().isHidden():
+                 self.news_layout.itemAt(0).widget().show()
+            self.fade(self.news_layout.itemAt(0).widget().rss_info)
+            print("updating infos, from pre-loaded buffer")
+            if self.counter <= len(allheadlines):
+                self.counter = self.counter + 1
+            self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
+            self.unfade(self.news_layout.itemAt(0).widget().rss_info)
 
     def updateEvents(self):
         self.display_events()
@@ -347,34 +353,40 @@ class MyWindow(QtWidgets.QMainWindow):
         user_discipline = self.cf_db.get_best_production_day()
 
         # sport widget 4 is only for elliptic
-        if user_discipline:
-            self.sport_widget4.athlete_1_name.setText(user_discipline[0]["user_login"])
-            self.sport_widget4.score_1.setText(str(round(user_discipline[0]["production_day"])) + " W")
-        if len(user_discipline) > 1:
-            self.sport_widget4.athlete_1_name.setText(user_discipline[1]["user_login"])
-            self.sport_widget4.score_1.setText(str(round(user_discipline[1]["production_day"])) + " W")
-        if len(user_discipline) > 2:
-            self.sport_widget4.athlete_1_name.setText(user_discipline[2]["user_login"])
-            self.sport_widget4.score_1.setText(str(round(user_discipline[2]["production_day"])) + " W")
-        users_hall_of_fame = []
-        users_hall_of_fame = self.cf_db.get_best_production_year()
-        if users_hall_of_fame:
-            self.hall_of_fame.athlete_1.setText(users_hall_of_fame[0]["user_login"])
-            pixmap_profile_1 = QtGui.QPixmap()
-            pixmap_profile_1.loadFromData(get_data_from_uri(users_hall_of_fame[0]["user_pic"]))
-            self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_1.scaledToWidth(100))
-      
-        if len(users_hall_of_fame) > 1:
-            self.hall_of_fame.athlete_2.setText(users_hall_of_fame[1]["user_login"])
-            pixmap_profile_2 = QtGui.QPixmap()
-            pixmap_profile_2.loadFromData(get_data_from_uri(users_hall_of_fame[1]["user_pic"]))
-            self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
+        if self.sport_widget4:
+            if user_discipline:
+                self.sport_widget4.athlete_1_name.setText(user_discipline[0]["user_login"])
+                self.sport_widget4.score_1.setText(str(round(user_discipline[0]["production_day"])) + " W")
+            if len(user_discipline) > 1:
+                self.sport_widget4.athlete_2_name.setText(user_discipline[1]["user_login"])
+                self.sport_widget4.score_2.setText(str(round(user_discipline[1]["production_day"])) + " W")
+            if len(user_discipline) > 2:
+                self.sport_widget4.athlete_3_name.setText(user_discipline[2]["user_login"])
+                self.sport_widget4.score_3.setText(str(round(user_discipline[2]["production_day"])) + " W")
 
-        if len(users_hall_of_fame) > 2:
-            self.hall_of_fame.athlete_2.setText(users_hall_of_fame[1]["user_login"])
-            pixmap_profile_2 = QtGui.QPixmap()
-            pixmap_profile_2.loadFromData(get_data_from_uri(users_hall_of_fame[1]["user_pic"]))
-            self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
+        if self.hall_of_fame:
+            users_hall_of_fame = []
+            users_hall_of_fame = self.cf_db.get_best_production_year()
+            if users_hall_of_fame:
+                self.hall_of_fame.athlete_1.setText(users_hall_of_fame[0]["user_login"])
+                pixmap_profile_1 = QtGui.QPixmap()
+                if users_hall_of_fame[0]["user_pic"]:
+                    pixmap_profile_1.loadFromData(get_data_from_uri(users_hall_of_fame[0]["user_pic"]))
+                    self.hall_of_fame.athlete_1_pic.setPixmap(pixmap_profile_1.scaled(screen_x * 0.09, screen_y * 0.09, QtCore.Qt.KeepAspectRatio))
+      
+            if len(users_hall_of_fame) > 1:
+                self.hall_of_fame.athlete_2.setText(users_hall_of_fame[1]["user_login"])
+                pixmap_profile_2 = QtGui.QPixmap()
+                if users_hall_of_fame[1]["user_pic"]:
+                    pixmap_profile_2.loadFromData(get_data_from_uri(users_hall_of_fame[1]["user_pic"]))
+                    self.hall_of_fame.athlete_2_pic.setPixmap(pixmap_profile_2.scaled(screen_x * 0.09, screen_y * 0.09, QtCore.Qt.KeepAspectRatio))
+
+            if len(users_hall_of_fame) > 2:
+                self.hall_of_fame.athlete_3.setText(users_hall_of_fame[2]["user_login"])
+                pixmap_profile_3 = QtGui.QPixmap()
+                if users_hall_of_fame[2]["user_pic"]:
+                    pixmap_profile_3.loadFromData(get_data_from_uri(users_hall_of_fame[2]["user_pic"]))
+                    self.hall_of_fame.athlete_3_pic.setPixmap(pixmap_profile_2.scaled(screen_x * 0.09, screen_y * 0.09, QtCore.Qt.KeepAspectRatio))
 
 
     def fade(self, widget):
@@ -665,14 +677,36 @@ class HallFameWidget(QtWidgets.QWidget):
         self.athlete_3.setFont(QtGui.QFont("Lemon/Milk light", 12))
 
         pixmap_profile_1 = QtGui.QPixmap('style/img/user.png')
-        self.athlete_1_pic.setPixmap(pixmap_profile_1.scaledToWidth(100))
+        self.athlete_1_pic.setPixmap(pixmap_profile_1.scaled(screen_x * 0.2, screen_y * 0.2, QtCore.Qt.KeepAspectRatio))
         pixmap_profile_2 = QtGui.QPixmap('style/img/user.png')
-        self.athlete_2_pic.setPixmap(pixmap_profile_2.scaledToWidth(100))
+        self.athlete_2_pic.setPixmap(pixmap_profile_2.scaled(screen_x * 0.2, screen_y * 0.2, QtCore.Qt.KeepAspectRatio))
         pixmap_profile_3 = QtGui.QPixmap('style/img/user.png')
-        self.athlete_3_pic.setPixmap(pixmap_profile_3.scaledToWidth(100))
+        self.athlete_3_pic.setPixmap(pixmap_profile_3.scaled(screen_x * 0.2, screen_y * 0.2, QtCore.Qt.KeepAspectRatio))
 
         self.hall_of_fame.setFont(QtGui.QFont("Lemon/Milk", 20))
         self.description.setText("Meilleurs sportifs de l'année")
+        self.description.setFont(QtGui.QFont("Aquawax", 15))
+
+        self.show()
+
+class ProductionWidget(QtWidgets.QWidget):
+    def __init__(self, parent, all_athlete):
+        super(HallFameWidget, self).__init__(parent)
+        uic.loadUi('ui/ProductionWidget.ui', self)
+
+        p = QtGui.QPalette()
+        p.setColor(QtGui.QPalette.Background, QtGui.QColor(255, 255, 255))
+        self.setPalette(p)
+        
+        self.setMaximumSize(screen_x / 3, screen_y) 
+
+        self.production.setText("C'est ce que vous produisez comme énergie!")
+        self.production.setFont(QtGui.QFont("Lemon/Milk light", 12))
+
+        production_picture = QtGui.QPixmap('style/img/electric.png')
+        self.production_pic.setPixmap(production_picture.scaled(screen_x * 0.2, screen_y * 0.2, QtCore.Qt.KeepAspectRatio))
+
+        self.title.setFont(QtGui.QFont("Lemon/Milk", 20))
         self.description.setFont(QtGui.QFont("Aquawax", 15))
 
         self.show()
@@ -687,9 +721,9 @@ if __name__ == "__main__":
     #DisciplineWidget = DisciplineWidget()
 
     #To load a generated Ui from code 
-    #window = QtWidgets.QMainWindow()
-    #ui = Ui_MainWindow()
-    #ui.setupUi(window)
+    #window = Qtwidgets.QMainWindow()
+    #ui = ui_mainwindow()
+    #ui.setupui(window)
     #window.show()
 
     sys.exit(app.exec_())
