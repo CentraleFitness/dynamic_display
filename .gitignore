@@ -3,3 +3,8 @@
 ################################################################################
 
 /.vs
+/build/exe.win32-3.6
+/dynamic-display/build
+/dynamic-display/dist/main
+/dynamic-display/venv
+/dynamic-display/__pycache__

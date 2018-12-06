@@ -14,9 +14,9 @@ from utils import *
 from sshtunnel import SSHTunnelForwarder
 
 #SSH tunnel connection
-SSH_HOST = "91.121.155.83"
-SSH_USER = "centralefitness"
-SSH_PASS = "Epitech42"
+SSH_HOST = "centrale-fitness.fr.nf"
+SSH_USER = "krinsta"
+SSH_PASS = "K7vdK5LuVK"
 
 server = SSHTunnelForwarder(
     SSH_HOST,
@@ -29,8 +29,7 @@ try:
     server.start()
 except Exception as e: 
     print(e)
-    self.cf_db.db_close()
-    self.close()
+
 else: print("Creating SSH tunnel to the server " + SSH_HOST + "... OK")
 
 screen_x = 0

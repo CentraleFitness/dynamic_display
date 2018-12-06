@@ -31,6 +31,9 @@
     <Compile Include="rssfeeder.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="utils.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|PythonCore|3.6-32" />

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "dynamic-display", "dynamic-display\dynamic-display.pyproj", "{41E16F5E-32DA-4C3E-B7D5-7675710057AB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C15B66F9-4C42-40F6-AFA4-B16CB4A93280}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{41E16F5E-32DA-4C3E-B7D5-7675710057AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41E16F5E-32DA-4C3E-B7D5-7675710057AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1BA1859C-02A2-4FEB-A58D-BF02B6B644DB}
+	EndGlobalSection
+EndGlobal
