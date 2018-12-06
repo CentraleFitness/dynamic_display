@@ -39,8 +39,10 @@ class dbconnector(object):
         self.db = self.client.centralefitness
         # Issue the serverStatus command and print the results
         try: self.db.command("serverStatus")
-        except Exception as e: print(e) # TODO manage DB connection failure /!\
-        else: print("Connection to the localhost database established")
+        except Exception as e:
+           print(e)
+
+        else: print("Connection to the localhost database... Connection established")
 
 
     def db_close(self):
@@ -57,10 +59,10 @@ class dbconnector(object):
         fitcenter_dict = {}
         # TODO check connection availability
         collection = self.db.fitness_centers
-        with open("config/fitness_center_id.txt") as file:  
+        with open("config/apiKey_license.txt") as file:  
             data = file.read()
             id = data
-        centerquery = {"_id": ObjectId(id)}
+        centerquery = {"apiKey": id}
         salle_collection = collection.find(centerquery)
 
          # Print all content of a doc
@@ -91,12 +93,11 @@ class dbconnector(object):
    
        # Wait DB update
     def get_configuration(self):
+        fitcenter = {} 
+        fitcenter = self.get_fitcenter()
         collection = self.db.display_configuration
-        with open("config/fitness_center_id.txt") as file:  
-            data = file.read()
-            id = data
-        if id:
-            config_query = {"fitness_center_id" : ObjectId(id)}
+        if fitcenter:
+            config_query = {"fitness_center_id" : ObjectId(fitcenter["_id"])}
             config_collection = collection.find(config_query)
             for config in config_collection:
                 self.config_dict["show_events"] = config["show_events"]

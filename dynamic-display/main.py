@@ -13,9 +13,10 @@ from utils import *
 
 from sshtunnel import SSHTunnelForwarder
 
-SSH_HOST = ""
-SSH_USER = ""
-SSH_PASS = ""
+#SSH tunnel connection
+SSH_HOST = "91.121.155.83"
+SSH_USER = "centralefitness"
+SSH_PASS = "Epitech42"
 
 server = SSHTunnelForwarder(
     SSH_HOST,
@@ -24,11 +25,16 @@ server = SSHTunnelForwarder(
     remote_bind_address=('localhost', 27017),
     local_bind_address=('localhost', 27017)
 )
+try:
+    server.start()
+except Exception as e: 
+    print(e)
+    self.cf_db.db_close()
+    self.close()
+else: print("Creating SSH tunnel to the server " + SSH_HOST + "... OK")
 
-server.start()
-
-screen_x = 1920
-screen_y = 1080
+screen_x = 0
+screen_y = 0
 
 class athlete(object):
     def __init__(self):
@@ -69,10 +75,11 @@ class MyWindow(QtWidgets.QMainWindow):
         uic.loadUi('ui/MainWindow.ui', self)
         global screen_x
         global screen_y
-        self.setFixedSize(screen_x, screen_y)
+        #self.setFixedSize(screen_x, screen_y)
         self.setWindowState(QtCore.Qt.WindowMaximized)
-        screen_x = self.frameGeometry().width()
-        screen_y = self.frameGeometry().height()
+        screenShape = QtWidgets.QDesktopWidget().screenGeometry()
+        screen_x = screenShape.width()
+        screen_y = screenShape.height()
         print("Screen size : x = " + str(screen_x) + ", y = " + str(screen_y))
         # Init DB connection
         # Init UI
@@ -154,7 +161,7 @@ class MyWindow(QtWidgets.QMainWindow):
         painter = QtGui.QPainter(self)
         painter.setPen(Qt.white)
         painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
-        painter.drawRect(0, line_news_y, screen_x + 500, line_height)
+        painter.drawRect(0, line_news_y, screen_x, line_height)
 
 
     def keyPressEvent(self, event):
@@ -224,10 +231,6 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def display_score(self):
         # Should have all sport
-        #self.sport_widget = DisciplineWidget_biking(self, self.all_athlete)
-        #self.sport_widget2 = DisciplineWidget_running(self, self.all_athlete)
-        #self.sport_widget3 = DisciplineWidget_pulldown(self, self.all_athlete)
-        #self.sport_widget4 = DisciplineWidget_elliptique(self, self.all_athlete)
 
         self.hall_of_fame = HallFameWidget(self, self.all_athlete)
         #shadow = QtGui.QGraphicsDropShadowEffect(self)
@@ -252,11 +255,6 @@ class MyWindow(QtWidgets.QMainWindow):
             self.scores_layout.addWidget(self.sport_widget4)
 
         self.updateScores()
-         # Should have all sports
-        #self.scores_layout.addWidget(self.sport_widget)
-        #self.scores_layout.addWidget(self.sport_widget2)
-        #self.scores_layout.addWidget(self.sport_widget3)
-        #self.scores_layout.addWidget(self.sport_widget4)
 
         self.scores_layout.addWidget(self.hall_of_fame)
 
@@ -300,21 +298,6 @@ class MyWindow(QtWidgets.QMainWindow):
     def update_all_contents(self):
         self.cf_db.get_configuration()
         layout_items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
-
-        #for item in layout_items:
-        #    self.fade(item.widget())
-            #item.widget().hide()
-        #if self.layout_counter < self.scores_layout.count():
-            #self.scores_layout.itemAt(self.layout_counter).widget().show()
-            #self.layout_counter += 1
-        #else:
-            #self.layout_counter = 0;
-        #self.scores_layout.itemAt(self.layout_counter).widget().show()
-        #self.unfade(self.scores_layout.itemAt(self.layout_counter).widget()) #Get real len
-        
-    
-        #for item in layout_items:
-            #self.fade(item.widget())
 
         self.updateEvents()
         self.updateScores()
