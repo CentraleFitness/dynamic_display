@@ -8,15 +8,16 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from rssfeeder import *
 from dbconnector import *
+from dbrequests import *
 from fitnesscenter import fitnesscenter
 from utils import *
 
 from sshtunnel import SSHTunnelForwarder
 
 #SSH tunnel connection
-SSH_HOST = "centrale-fitness.fr.nf"
-SSH_USER = "krinsta"
-SSH_PASS = "K7vdK5LuVK"
+SSH_HOST = "91.121.155.83"
+SSH_USER = "centralefitness"
+SSH_PASS = "Epitech42"
 
 server = SSHTunnelForwarder(
     SSH_HOST,
@@ -45,7 +46,8 @@ class MyWindow(QtWidgets.QMainWindow):
     _counter = 0
     _layout_counter = 0
     all_athlete = []
-    _cf_db = dbconnector()
+    #_cf_db = dbconnector()
+    _cf_db = dbrequests()
     now = QtCore.QDate.currentDate()
     timer = QtCore.QTimer()
     timer_info = QtCore.QTimer()
@@ -220,9 +222,13 @@ class MyWindow(QtWidgets.QMainWindow):
 
 
     def display_fitnesscenter(self):
-         # Set the fitness center info
+        # Set the fitness center info
+
         fitcenter_dict = self.cf_db.get_fitcenter()
         myfitnesscenter = createFitnessCenter(fitcenter_dict)
+        #DEBUG 
+        event_list = []
+        event_list = self.cf_db.get_events()
         self.salle_name.setText(myfitnesscenter.name + "  " + myfitnesscenter.city)
         self.salle_name.setFont(QtGui.QFont("built titling rg", 20))
         self.salle_name.setStyleSheet('color: white')
@@ -262,8 +268,8 @@ class MyWindow(QtWidgets.QMainWindow):
         events = {}
         events_widgets = []
         if self.cf_db.config_dict["show_events"] == True:
+
             events = self.cf_db.get_events()
-         
             # Multi events
             for event in events:
                 event_widget = EventWidget(self, event)
@@ -280,7 +286,8 @@ class MyWindow(QtWidgets.QMainWindow):
                 if flag == 0:
                     self.scores_layout.addWidget(event)
         if self.cf_db.config_dict["show_national_production_rank"] == True:
-            production_totale = self.cf_db.get_total_production_year()
+            #production_totale = self.cf_db.get_total_production_year()
+            production_totale = 45729
             production_widget = ProductionWidget(self, production_totale)
             flag = 0
             items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
