@@ -65,7 +65,6 @@ class dbconnector(object):
         centerquery = {"apiKey": id}
         salle_collection = collection.find(centerquery)
 
-         # Print all content of a doc
         for salle in salle_collection:
             fitcenter_dict["_id"] = salle["_id"]
             fitcenter_dict["name"] = salle["name"]

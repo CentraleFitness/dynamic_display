@@ -88,6 +88,8 @@ class MyWindow(QtWidgets.QMainWindow):
         # used only with local config file, OR as long as there is no real users on DB
         self.get_json_data()
         self.cf_db.get_configuration()
+        # FOR DEBUG
+        self.cf_db.get_best_production_day()
         self.display_fitnesscenter()
         self.display_score()
         #self.display_events()
