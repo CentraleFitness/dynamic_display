@@ -14,6 +14,17 @@ class dbrequests(object):
     def config_dict(self, value):
         self._config_dict = value
 
+    def search_user_in_list(self, user_id, list):
+        for item in list:
+            if item["user_id"] == user_id:
+                return True
+        return False
+
+    def extract_numberlong(self, numberlong):
+        number_string = json.dumps(numberlong)
+        number = number_string.replace('{\"$numberLong\": \"', '').replace('\"}', '')
+        return int(number.replace('\"', ''))
+
     def extract_objectid(self, oid):
         oid_string = json.dumps(oid)
         id = oid_string.replace('{\"$oid\": ', '').replace('}', '')
@@ -87,10 +98,15 @@ class dbrequests(object):
                 print(e)
                 return
             result_dict = result.json()
-            event_dict = result_dict.copy()
+            event_dict = {}
             event_dict["_id"] = self.extract_objectid(result_dict["_id"])
             event_dict["fitness_center_id"] = self.extract_objectid(result_dict["fitness_center_id"])
             event_dict["picture_id"] = self.extract_objectid(result_dict["fitness_center_id"])
+            event_dict["pic"] = result_dict["picture"]
+            event_dict["title"] = result_dict["title"]
+            event_dict["description"] = result_dict["description"]
+            event_dict["start_date"] = self.extract_numberlong(result_dict["start_date"])
+            event_dict["end_date"] = self.extract_numberlong(result_dict["end_date"])
             #description = result_dict["description"]
             # TODO ENCODING
             #event_dict["description"] = description.decode("utf-8")
@@ -98,18 +114,106 @@ class dbrequests(object):
         return event_list
 
     def get_user_pic(self, pic_id):
-        return picture["picture"]
+        try:
+              result = requests.post(
+                  "{}{}".format("http://91.121.155.83:5446/", "get/display/user/picture"),
+                  json=
+                  {
+                      'id': pic_id
+                  },
+                  timeout=30)
+              result.raise_for_status()
+        except Exception as e: 
+            print(e)
+            return
+        result_dict = result.json()
+        return result_dict["picture"]
     
     def get_user(self, id):
         user_dict = {}
+        try:
+              result = requests.post(
+                  "{}{}".format("http://91.121.155.83:5446/", "get/display/user"),
+                  json=
+                  {
+                      'id': id
+                  },
+                  timeout=30)
+              result.raise_for_status()
+        except Exception as e: 
+            print(e)
+            return
+        result_dict = result.json()
+        user_dict["login"] = result_dict["login"]
+        user_dict["pic"] = self.get_user_pic(self.extract_objectid(result_dict["picture_id"]))
+        user_dict["fitness_center_id"] = self.extract_objectid(result_dict["fitness_center_id"])
         return user_dict
 
     def get_total_production_year(self):
-        production_list = []
-        return (production_list)
-
+        electric_productions = []
+        total_production = 0
+        fitcenter = self.get_fitcenter()
+        try:
+              result = requests.post(
+                  "{}{}".format("http://91.121.155.83:5446/", "get/display/ppp"),
+                  json=
+                  {
+                      'id': fitcenter["_id"]
+                  },
+                  timeout=30)
+              result.raise_for_status()
+        except Exception as e: 
+            print(e)
+            return 0
+        result_array = result.json()
+        for item in result_array:
+            result_dict = json.loads(item)
+            for electric_item in result_dict["electricproductions"]:
+                total_production += electric_item["production_year"]
+        return (total_production)
+   
     def get_best_production_year(self):
         production_list = []
+        electric_productions = []
+        fitcenter = self.get_fitcenter()
+        try:
+              result = requests.post(
+                  "{}{}".format("http://91.121.155.83:5446/", "get/display/ppp"),
+                  json=
+                  {
+                      'id': fitcenter["_id"]
+                  },
+                  timeout=30)
+              result.raise_for_status()
+        except Exception as e: 
+            print(e)
+            return
+        result_array = result.json()
+        for item in result_array:
+            result_dict = json.loads(item)
+            for electric_item in result_dict["electricproductions"]:
+                user_info = {}
+                user_info = self.get_user(self.extract_objectid(electric_item["user_id"]))
+                production_item = {}
+                production_item["production_year"] = electric_item["production_year"]
+                production_item["user_id"] = self.extract_objectid(electric_item["user_id"])
+                production_item["user_login"] = user_info["login"]
+                production_item["user_pic"] = user_info["pic"]
+                electric_productions.append(production_item)
+       
+        for i in range(0, 3):  
+            best_production = 0
+            item = {}
+            for j in range(len(electric_productions)):
+                if electric_productions[j]["production_year"] > best_production:
+                    if i > 0 :
+                        if self.search_user_in_list(electric_productions[j]["user_id"], production_list) is True:
+                            electric_productions[j]["production_day"] = 0
+                            continue
+                    best_production = electric_productions[j]["production_year"];
+                    item = electric_productions[j]
+            production_list.append(item)
+            electric_productions.remove(item)
         return (production_list)
     
     def get_best_production_day(self):
@@ -132,15 +236,27 @@ class dbrequests(object):
         for item in result_array:
             result_dict = json.loads(item)
             for electric_item in result_dict["electricproductions"]:
-                electric_productions.append(electric_item)
+                user_info = {}
+                user_info = self.get_user(self.extract_objectid(electric_item["user_id"]))
+                production_item = {}
+                production_item["production_day"] = electric_item["production_day"]
+                production_item["user_id"] = self.extract_objectid(electric_item["user_id"])
+                production_item["user_login"] = user_info["login"]
+                production_item["user_pic"] = user_info["pic"]
+                electric_productions.append(production_item)
        
         for i in range(0, 3):  
             best_production = 0
-            for item in electric_productions:      
-                if item["production_day"] > best_production: 
-                    best_production = item["production_day"]
+            item = {}
+            for j in range(len(electric_productions)):
+                if electric_productions[j]["production_day"] > best_production:
+                    if i > 0 :
+                        if self.search_user_in_list(electric_productions[j]["user_id"], production_list) is True:
+                            electric_productions[j]["production_day"] = 0
+                            continue
+                    best_production = electric_productions[j]["production_day"];
+                    item = electric_productions[j]
             production_list.append(item)
             electric_productions.remove(item)
 
-        print(production_list) 
         return (production_list)

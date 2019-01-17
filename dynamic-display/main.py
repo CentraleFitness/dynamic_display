@@ -15,23 +15,23 @@ from utils import *
 from sshtunnel import SSHTunnelForwarder
 
 #SSH tunnel connection
-SSH_HOST = "91.121.155.83"
-SSH_USER = "centralefitness"
-SSH_PASS = "Epitech42"
+#SSH_HOST = "91.121.155.83"
+#SSH_USER = "centralefitness"
+#SSH_PASS = "Epitech42"
 
-server = SSHTunnelForwarder(
-    SSH_HOST,
-    ssh_username=SSH_USER,
-    ssh_password=SSH_PASS,
-    remote_bind_address=('localhost', 27017),
-    local_bind_address=('localhost', 27017)
-)
-try:
-    server.start()
-except Exception as e: 
-    print(e)
+#server = SSHTunnelForwarder(
+#    SSH_HOST,
+#    ssh_username=SSH_USER,
+#    ssh_password=SSH_PASS,
+#    remote_bind_address=('localhost', 27017),
+#    local_bind_address=('localhost', 27017)
+#)
+#try:
+#    server.start()
+#except Exception as e: 
+#    print(e)
 
-else: print("Creating SSH tunnel to the server " + SSH_HOST + "... OK")
+#else: print("Creating SSH tunnel to the server " + SSH_HOST + "... OK")
 
 screen_x = 0
 screen_y = 0
@@ -88,11 +88,8 @@ class MyWindow(QtWidgets.QMainWindow):
         # used only with local config file, OR as long as there is no real users on DB
         self.get_json_data()
         self.cf_db.get_configuration()
-        # FOR DEBUG
-        self.cf_db.get_best_production_day()
         self.display_fitnesscenter()
         self.display_score()
-        #self.display_events()
         self.display_rss()
         # Close DB connection
         #self.cf_db.db_close() NO DATA CONNECTION
@@ -228,7 +225,6 @@ class MyWindow(QtWidgets.QMainWindow):
 
         fitcenter_dict = self.cf_db.get_fitcenter()
         myfitnesscenter = createFitnessCenter(fitcenter_dict)
-        #DEBUG 
         event_list = []
         event_list = self.cf_db.get_events()
         self.salle_name.setText(myfitnesscenter.name + "  " + myfitnesscenter.city)
@@ -288,8 +284,7 @@ class MyWindow(QtWidgets.QMainWindow):
                 if flag == 0:
                     self.scores_layout.addWidget(event)
         if self.cf_db.config_dict["show_national_production_rank"] == True:
-            #production_totale = self.cf_db.get_total_production_year()
-            production_totale = 45729
+            production_totale = self.cf_db.get_total_production_year()
             production_widget = ProductionWidget(self, production_totale)
             flag = 0
             items = (self.scores_layout.itemAt(i) for i in range(self.scores_layout.count()))
@@ -354,10 +349,13 @@ class MyWindow(QtWidgets.QMainWindow):
                  self.news_layout.itemAt(0).widget().show()
             self.fade(self.news_layout.itemAt(0).widget().rss_info)
             print("updating infos, from pre-loaded buffer")
-            if self.counter <= len(allheadlines):
+            if self.counter < len(allheadlines):
                 self.counter = self.counter + 1
-            self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO IndexError when allheadlines empty
+            if self.counter == 110:
+                self.counter = 0
+            self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO
             self.unfade(self.news_layout.itemAt(0).widget().rss_info)
+        print("COUNTER INFO IS " + str(self.counter))
 
     def updateEvents(self):
         self.display_events()
