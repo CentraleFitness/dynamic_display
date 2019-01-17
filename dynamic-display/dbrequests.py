@@ -4,6 +4,8 @@ import sys
 import requests
 import json
 from bson.objectid import ObjectId
+#from requests.packages.urllib3.util.retry import Retry
+
 
 class dbrequests(object):
 
@@ -43,7 +45,7 @@ class dbrequests(object):
                 id = data
             try:
                 result = requests.post(
-                    "{}{}".format("http://91.121.155.83:5446/", "get/display/center"),
+                    "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/center"),
                     json=
                     {
                         'id': id
@@ -66,12 +68,12 @@ class dbrequests(object):
         fitcenter = self.get_fitcenter()
         try:
                result = requests.post(
-                   "{}{}".format("http://91.121.155.83:5446/", "get/display/config"),
+                   "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/config"),
                    json=
                    {
                        'id': fitcenter["_id"]
                    },
-                   timeout=30)
+                   timeout=40)
                result.raise_for_status()
         except Exception as e: 
             print(e)
@@ -84,7 +86,7 @@ class dbrequests(object):
         self.config_dict["_id"] = self.extract_objectid(result_dict["_id"])
         self.config_dict["fitness_center_id"] = self.extract_objectid(result_dict["fitness_center_id"])
 
-    def get_events(self): #TODO TEST
+    def get_events(self):
         event_list = []
         if self.config_dict["show_events"] == True: #Should be initialize event is show_events False
          # for events in events_collection:
@@ -92,7 +94,7 @@ class dbrequests(object):
                 event_id = item["$oid"]
             try:
                 result = requests.post(
-                       "{}{}".format("http://91.121.155.83:5446/", "get/display/event"),
+                       "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/event"),
                     json=
                     {
                            'id': event_id
@@ -118,7 +120,7 @@ class dbrequests(object):
     def get_user_pic(self, pic_id):
         try:
               result = requests.post(
-                  "{}{}".format("http://91.121.155.83:5446/", "get/display/user/picture"),
+                  "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/user/picture"),
                   json=
                   {
                       'id': pic_id
@@ -135,7 +137,7 @@ class dbrequests(object):
         user_dict = {}
         try:
               result = requests.post(
-                  "{}{}".format("http://91.121.155.83:5446/", "get/display/user"),
+                  "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/user"),
                   json=
                   {
                       'id': id
@@ -157,7 +159,7 @@ class dbrequests(object):
         fitcenter = self.get_fitcenter()
         try:
               result = requests.post(
-                  "{}{}".format("http://91.121.155.83:5446/", "get/display/ppp"),
+                  "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/ppp"),
                   json=
                   {
                       'id': fitcenter["_id"]
@@ -180,7 +182,7 @@ class dbrequests(object):
         fitcenter = self.get_fitcenter()
         try:
               result = requests.post(
-                  "{}{}".format("http://91.121.155.83:5446/", "get/display/ppp"),
+                  "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/ppp"),
                   json=
                   {
                       'id': fitcenter["_id"]
@@ -223,13 +225,15 @@ class dbrequests(object):
         electric_productions = []
         fitcenter = self.get_fitcenter()
         try:
+              #retries = Retry(connect=5, read=2, redirect=5)
+              #http = PoolManager(retries=retries)
               result = requests.post(
-                  "{}{}".format("http://91.121.155.83:5446/", "get/display/ppp"),
+                  "{}{}".format("https://api.intranet.centrale-fitness.fr.nf/", "get/display/ppp"),
                   json=
                   {
                       'id': fitcenter["_id"]
                   },
-                  timeout=30)
+                  timeout=50)
               result.raise_for_status()
         except Exception as e: 
             print(e)
