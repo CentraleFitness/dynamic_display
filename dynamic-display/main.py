@@ -353,9 +353,8 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.counter = self.counter + 1
             if self.counter == 110:
                 self.counter = 0
-            self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter]) #TODO
+            self.news_layout.itemAt(0).widget().rss_info.setText(allheadlines[self.counter])
             self.unfade(self.news_layout.itemAt(0).widget().rss_info)
-        print("COUNTER INFO IS " + str(self.counter))
 
     def updateEvents(self):
         self.display_events()

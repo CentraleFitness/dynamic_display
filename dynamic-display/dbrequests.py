@@ -20,6 +20,11 @@ class dbrequests(object):
                 return True
         return False
 
+    def manual_encode(self, str):
+        temp_encoded = str.replace("Ã©", 'é').replace("Ã§", 'ç').replace("Ã¨", 'è').replace("Ã«", 'ê').replace("Ãª", 'ê')
+        encoded = temp_encoded.replace("Ã", 'à')
+        return encoded
+
     def extract_numberlong(self, numberlong):
         number_string = json.dumps(numberlong)
         number = number_string.replace('{\"$numberLong\": \"', '').replace('\"}', '')
@@ -103,13 +108,10 @@ class dbrequests(object):
             event_dict["fitness_center_id"] = self.extract_objectid(result_dict["fitness_center_id"])
             event_dict["picture_id"] = self.extract_objectid(result_dict["fitness_center_id"])
             event_dict["pic"] = result_dict["picture"]
-            event_dict["title"] = result_dict["title"]
-            event_dict["description"] = result_dict["description"]
+            event_dict["title"] = self.manual_encode(result_dict["title"])
+            event_dict["description"] = self.manual_encode(result_dict["description"])
             event_dict["start_date"] = self.extract_numberlong(result_dict["start_date"])
             event_dict["end_date"] = self.extract_numberlong(result_dict["end_date"])
-            #description = result_dict["description"]
-            # TODO ENCODING
-            #event_dict["description"] = description.decode("utf-8")
             event_list.append(event_dict)
         return event_list
 
